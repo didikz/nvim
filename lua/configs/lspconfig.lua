@@ -1,53 +1,68 @@
--- load defaults i.e lua_lsp
-require("nvchad.configs.lspconfig").defaults()
-
-local lspconfig = require "lspconfig"
-
--- EXAMPLE
-local servers = { "html", "cssls" }
+-- Get NvChad's LSP helpers
 local nvlsp = require "nvchad.configs.lspconfig"
 
--- lsps with default config
+-- Basic servers with default config
+local servers = { "html", "cssls" }
+
 for _, lsp in ipairs(servers) do
-  lspconfig[lsp].setup {
+  vim.lsp.config[lsp] = {
+    cmd = { lsp, "--stdio" },
+    root_markers = { ".git" },
     on_attach = nvlsp.on_attach,
     on_init = nvlsp.on_init,
     capabilities = nvlsp.capabilities,
   }
+  vim.lsp.enable(lsp)
 end
 
-lspconfig.gopls.setup {
-   on_attach = function(client, bufnr)
-      -- Enable LSP-based formatting
-      if client.server_capabilities.documentFormattingProvider then
-         vim.api.nvim_create_autocmd("BufWritePre", {
-            buffer = bufnr,
-            callback = function()
-              vim.lsp.buf.code_action({
-                context = {
-                  only = {"source.organizeImports"},
-                  diagnostics = {},
-                },
-                apply = true,
-              })
-
-               vim.lsp.buf.format()  -- Automatically format on save
-            end,
-         })
-      end
-   end,
-   settings = {
-      gopls = {
-         analyses = {
-            unusedparams = true, -- highlight and remove unused params  
-            unusedwrite = true, -- highlight and remove unused writes
-         },
-         staticcheck = true,
+-- gopls with custom formatting
+vim.lsp.config.gopls = {
+  cmd = { "gopls" },
+  root_markers = { "go.mod", ".git" },
+  on_attach = function(client, bufnr)
+    -- Call NvChad's default on_attach first
+    if nvlsp.on_attach then
+      nvlsp.on_attach(client, bufnr)
+    end
+    
+    -- Add format on save
+    if client.server_capabilities.documentFormattingProvider then
+      vim.api.nvim_create_autocmd("BufWritePre", {
+        buffer = bufnr,
+        callback = function()
+          vim.lsp.buf.code_action({
+            context = {
+              only = {"source.organizeImports"},
+              diagnostics = {},
+            },
+            apply = true,
+          })
+          vim.lsp.buf.format()
+        end,
+      })
+    end
+  end,
+  on_init = nvlsp.on_init,
+  capabilities = nvlsp.capabilities,
+  settings = {
+    gopls = {
+      analyses = {
+        unusedparams = true,
+        unusedwrite = true,
       },
-   },
+      staticcheck = true,
+    },
+  },
 }
+vim.lsp.enable('gopls')
 
-lspconfig.ts_ls.setup({
+-- TypeScript/JavaScript
+vim.lsp.config.ts_ls = {
+  cmd = { "typescript-language-server", "--stdio" },
+  root_markers = { "package.json", "tsconfig.json", "jsconfig.json", ".git" },
+  on_attach = nvlsp.on_attach,
+  on_init = nvlsp.on_init,
+  capabilities = nvlsp.capabilities,
   init_options = {
     preferences = {
       disableSuggestions = true,
@@ -80,9 +95,16 @@ lspconfig.ts_ls.setup({
       },
     },
   },
-})
+}
+vim.lsp.enable('ts_ls')
 
-lspconfig.tailwindcss.setup({
+-- Tailwind CSS
+vim.lsp.config.tailwindcss = {
+  cmd = { "tailwindcss-language-server", "--stdio" },
+  root_markers = { "tailwind.config.js", "tailwind.config.ts", "tailwind.config.cjs", "package.json", ".git" },
+  on_attach = nvlsp.on_attach,
+  on_init = nvlsp.on_init,
+  capabilities = nvlsp.capabilities,
   filetypes = {
     "typescriptreact",
     "typescript",
@@ -97,11 +119,53 @@ lspconfig.tailwindcss.setup({
       typescriptreact = "javascript",
     },
   },
-})
+}
+vim.lsp.enable('tailwindcss')
 
--- configuring single server, example: typescript
--- lspconfig.ts_ls.setup {
---   on_attach = nvlsp.on_attach,
---   on_init = nvlsp.on_init,
---   capabilities = nvlsp.capabilities,
--- }
+-- PHP (Intelephense) - optimized for use with Phpactor
+vim.lsp.config.intelephense = {
+  cmd = { "intelephense", "--stdio" },
+  root_markers = { "composer.json", ".git" },
+  on_attach = nvlsp.on_attach,
+  on_init = nvlsp.on_init,
+  capabilities = nvlsp.capabilities,
+  settings = {
+    intelephense = {
+      files = {
+        maxSize = 5000000,
+        associations = { "*.php", "*.phtml" },
+        exclude = {
+          "**/.git/**",
+          "**/.svn/**",
+          "**/.hg/**",
+          "**/CVS/**",
+          "**/.DS_Store/**",
+          "**/node_modules/**",
+          "**/bower_components/**",
+          "**/vendor/**/{Tests,tests}/**",
+          "**/.history/**",
+          "**/vendor/**/vendor/**",
+        },
+      },
+      stubs = {
+        "apache", "bcmath", "bz2", "calendar", "com_dotnet", "Core", "ctype", "curl", "date",
+        "dba", "dom", "enchant", "exif", "FFI", "fileinfo", "filter", "fpm", "ftp", "gd", "gettext",
+        "gmp", "hash", "iconv", "imap", "intl", "json", "ldap", "libxml", "mbstring", "meta", "mysqli",
+        "oci8", "odbc", "openssl", "pcntl", "pcre", "PDO", "pdo_ibm", "pdo_mysql", "pdo_pgsql", "pdo_sqlite", "pgsql",
+        "Phar", "posix", "pspell", "readline", "Reflection", "session", "shmop", "SimpleXML", "snmp", "soap",
+        "sockets", "sodium", "SPL", "sqlite3", "standard", "superglobals", "sysvmsg", "sysvsem", "sysvshm", "tidy",
+        "tokenizer", "xml", "xmlreader", "xmlrpc", "xmlwriter", "xsl", "Zend OPcache", "zip", "zlib",
+        "wordpress", "phpunit",
+      },
+      completion = {
+        insertUseDeclaration = true,
+        fullyQualifyGlobalConstantsAndFunctions = false,
+      },
+      format = {
+        enable = true,
+      },
+    },
+  },
+}
+vim.lsp.enable('intelephense')
+
