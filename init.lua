@@ -36,11 +36,3 @@ vim.schedule(function()
   require "mappings"
 end)
 
-vim.api.nvim_create_autocmd("BufWritePre", {
-   pattern = "*.go",
-   callback = function()
-      vim.lsp.buf.format() -- For gopls
-      -- Alternative for gofmt if needed:
-      -- vim.cmd("silent! !gofmt -w %")
-   end,
-})
