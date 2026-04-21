@@ -15,33 +15,11 @@ for _, lsp in ipairs(servers) do
   vim.lsp.enable(lsp)
 end
 
--- gopls with custom formatting
+-- gopls (format + imports handled by conform via goimports + gofumpt)
 vim.lsp.config.gopls = {
   cmd = { "gopls" },
   root_markers = { "go.mod", ".git" },
-  on_attach = function(client, bufnr)
-    -- Call NvChad's default on_attach first
-    if nvlsp.on_attach then
-      nvlsp.on_attach(client, bufnr)
-    end
-    
-    -- Add format on save
-    if client.server_capabilities.documentFormattingProvider then
-      vim.api.nvim_create_autocmd("BufWritePre", {
-        buffer = bufnr,
-        callback = function()
-          vim.lsp.buf.code_action({
-            context = {
-              only = {"source.organizeImports"},
-              diagnostics = {},
-            },
-            apply = true,
-          })
-          vim.lsp.buf.format()
-        end,
-      })
-    end
-  end,
+  on_attach = nvlsp.on_attach,
   on_init = nvlsp.on_init,
   capabilities = nvlsp.capabilities,
   settings = {
@@ -162,7 +140,7 @@ vim.lsp.config.intelephense = {
         fullyQualifyGlobalConstantsAndFunctions = false,
       },
       format = {
-        enable = true,
+        enable = false,
       },
     },
   },

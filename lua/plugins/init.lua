@@ -30,7 +30,10 @@ return {
         "typescript-language-server",
         "tailwindcss-language-server",
         "prettierd",
-        "eslint_d"
+        "eslint_d",
+        "goimports",
+        "gofumpt",
+        "php-cs-fixer",
       }
     }
   },
